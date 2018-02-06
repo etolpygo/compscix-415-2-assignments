@@ -8,3 +8,29 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+My Github repository for my assignments can be found at this URL: [https://github.com/etolpygo/compscix-415-2-assignments](https://github.com/etolpygo/compscix-415-2-assignments)
+
+```{r load_packages, warning=FALSE, message=FALSE}
+library(mdsr)
+library(tidyverse)
+```
+
+```{r}
+data("WorldCities")
+```
+
+```{r}
+glimpse(WorldCities)
+```
+
+QUESTION 1: How many observations and variables are there in this data set? What are some of the variable names? 
+
+There are 23,018 observations of 10 variables. Some of the variables are: code, name, country, latitude, population, region, date.
+
+```{r}
+WorldCities <- head(WorldCities, 200)
+country_col <- WorldCities$country
+unique(country_col)
+```
+
