@@ -1,0 +1,183 @@
+---
+title: "COMPSCIX 415.2 Homework 3"
+author: "Elena Tolpygo Cranley"
+date: "2/23/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_packages, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(nycflights13)
+```
+
+# 3.8.1 Exercises
+- What is the problem with this plot? How could you improve it?
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point()
+```
+
+Some of the points on the plot are overlapping. Adding position = "jitter" within the geom_point parentheses will show the overlapping points.
+
+- What parameters to geom_jitter() control the amount of jittering?
+
+width and height parameters control the amount of vertical and horizontal jitter.
+
+- Compare and contrast geom_jitter() with geom_count().
+
+geom_jitter() adds random noise to the point location so that all (or nearly) points are visible.
+geom_count() makes each point size proportional to the number of observations at that point.
+
+- What’s the default position adjustment for geom_boxplot()? Create a visualisation of the mpg dataset that demonstrates it.
+
+Default position adjustment is dodge; meaning: the vertical position of a geom is preserved and the horizontal position is varied.  
+
+```{r}
+ggplot(data=mpg, mapping=aes(x=class, y=hwy)) + geom_boxplot()
+```
+
+# 3.9.1 Exercises
+
+- What does labs() do? Read the documentation.
+
+labs() controls plot axis, legend and labels.
+
+- What does the plot below tell you about the relationship between city and highway mpg? Why is coord_fixed() important? What does geom_abline() do?
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point() + 
+  geom_abline() +
+  coord_fixed()
+```
+
+The plot tells that generally, the higher the city mpg, the highter also the hwy mpg of a vehicle.
+coord_fixed() is important because it preserves the ratio between the x and y variables, rather than expand the plot to the full width avaiable based on the data points. In this case, cty and hwy variables are in the same units of mpg, so it makes sense to preserve the 1:1 ratio.
+geom_abline() adds a reference line with the same slope as that of the data.
+
+# 4.4 Practice
+
+- Why does this code not work?
+
+```
+my_variable <- 10
+my_varıable
+#> Error in eval(expr, envir, enclos): object 'my_varıable' not found
+```
+The second variable is not named the same as the first (uses ı instead of i character.)
+
+- Tweak each of the following R commands so that they run correctly:
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+```
+
+```{r}
+filter(mpg, cyl == 8)
+```
+
+```{r}
+filter(diamonds, carat > 3)
+```
+
+# 5.2.4 Exercises
+
+- Find all flights that
+-- Had an arrival delay of two or more hours
+```{r}
+filter(flights, arr_delay >= 120)
+```
+
+-- Flew to Houston (IAH or HOU)
+```{r}
+filter(flights, dest %in% c('IAH', 'HOU'))
+```
+
+-- Were operated by United, American, or Delta
+```{r}
+filter(flights, carrier %in% c('UA', 'AA', 'DL'))
+```
+
+-- Departed in summer (July, August, and September)
+```{r}
+filter(flights, month %in% c(6, 7, 8))
+```
+
+-- Arrived more than two hours late, but didn’t leave late
+```{r}
+filter(flights, arr_delay >= 120 & dep_delay <= 0)
+```
+
+-- Were delayed by at least an hour, but made up over 30 minutes in flight
+```{r}
+filter(flights, dep_delay >=60 & (dep_delay - arr_delay) >= 30)
+```
+
+-- Departed between midnight and 6am (inclusive)
+```{r}
+filter(flights, dep_time >= 0 & dep_time <= 600)
+```
+
+
+- Another useful dplyr filtering helper is between(). What does it do? Can you use it to simplify the code needed to answer the previous challenges?
+
+between() is a shortcut for comparing values between the specified range.
+```{r}
+filter(flights, between(dep_time, 0, 600))
+```
+
+
+- How many flights have a missing dep_time? What other variables are missing? What might these rows represent?
+```{r}
+nrow(filter(flights, is.na(dep_time)))
+```
+
+In addition to a missing dep_time, dep_delay, arr_time, arr_delay, and air_time are also missing. This likely represents cancelled flights.
+
+- Why is NA ^ 0 not missing? Why is NA | TRUE not missing? Why is FALSE & NA not missing? Can you figure out the general rule? (NA * 0 is a tricky counterexample!)
+
+Any value raised to the zeroth power is one. NA or true will return the first non-falsy value, which is true. false or NA is false because neither value is known to be true. 
+
+
+# 5.4.1 Exercises
+
+- Brainstorm as many ways as possible to select dep_time, dep_delay, arr_time, and arr_delay from flights.
+```{r}
+select(flights, dep_time, dep_delay, arr_time, arr_delay)
+select(flights, starts_with("dep_"), starts_with("arr_"))
+```
+
+- What happens if you include the name of a variable multiple times in a select() call?
+
+It is selected only once.
+
+- What does the one_of() function do? Why might it be helpful in conjunction with this vector?
+```{r}
+vars <- c("year", "month", "day", "dep_delay", "arr_delay")
+```
+
+one_of() function selects variables by names in the vector.
+
+```{r}
+select(flights, one_of(vars))
+```
+
+
+- Does the result of running the following code surprise you? How do the select helpers deal with case by default? How can you change that default?
+```{r}
+select(flights, contains("TIME"))
+```
+
+This selects columns with names matching time. ignore.case is true by default. It can be set to false:
+```{r}
+select(flights, contains("TIME", ignore.case = FALSE))
+```
+
