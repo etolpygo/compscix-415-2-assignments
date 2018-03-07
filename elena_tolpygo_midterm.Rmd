@@ -1,0 +1,206 @@
+---
+title: "COMPSCIX 415.2 Homework 5/Midterm"
+author: "Elena Tolpygo Cranley"
+date: "3/5/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+My Github repository for my assignments can be found at this URL: [https://github.com/etolpygo/compscix-415-2-assignments](https://github.com/etolpygo/compscix-415-2-assignments)
+
+```{r load_packages, warning=FALSE, message=FALSE}
+library(mdsr)
+library(tidyverse)
+```
+
+# Table of Contents
+- [The tidyverse packages](#tidyverse)
+- [R Basics](#rbasics)
+- [Data import/export](#dataimpexp)
+- [Visualization](#viz)
+- [Data munging and wrangling](#munge)
+- [EDA](#eda)
+
+## <a name="tidyverse"></a>The tidyverse packages (3 points)
+
+### 1. Can you name which package is associated with each task below?
+- **Plotting** - ggplot2
+- **Data munging/wrangling** - dplyr
+- **Reshaping (speading and gathering) data** - tidyr
+- **Importing/exporting data** - readr
+
+### 2. Now can you name two functions that you’ve used from each package that you listed above for these tasks?
+- **Plotting** - geom_point() and geom_boxplot()
+- **Data munging/wrangling** - filter() and mutate()
+- **Reshaping data** - spread() and gather()
+- **Importing/exporting data (note that readRDS and saveRDS are base R functions)** - read_csv() and parse_integer()
+
+
+## <a name="rbasics"></a>R Basics (1.5 points)
+
+### 1. Fix this code with the fewest number of changes possible so it works:
+My_data.name___is.too00ooLong! <- c( 1 , 2 , 3 )
+```{r}
+My_data.name___is.too00ooLong <- c( 1 , 2 , 3 )
+```
+
+### 2. Fix this code so it works:
+my_string <- C('has', 'an', 'error', 'in', 'it)
+```{r}
+my_string <- c('has', 'an', 'error', 'in', 'it')
+```
+
+### 3. Look at the code below and comment on what happened to the values in the vector.
+```{r}
+my_vector <- c(1, 2, '3', '4', 5)
+my_vector
+```
+Because my_vector is created from elements of mixed type (numbers and strings), all elements were converted to the same type (string).
+
+
+## <a name="dataimpexp"></a>Data import/export (3 points)
+
+### 1. Download the rail_trail.txt file from Canvas (in the Midterm Exam section here) and successfully import it into R. Prove that it was imported successfully by including your import code and taking a glimpse of the result.
+```{r}
+file_path <- "~/Documents/Box Sync/^edu/compscix-415-2-assignments/rail_trail.txt"
+rail_trail <- read_delim(file_path, '|')
+glimpse(rail_trail)
+```
+
+### 2. Export the file into an R-specific format and name it “rail_trail.rds”. Make sure you define the path correctly so that you know where it gets saved. Then reload the file. Include your export and import code and take another glimpse.
+```{r}
+output_path <- "~/Documents/Box Sync/^edu/compscix-415-2-assignments/rail_trail.rds"
+write_rds(rail_trail, output_path)
+rail_trail2 <- read_rds(output_path)
+glimpse(rail_trail2)
+```
+
+
+## <a name="viz"></a>Visualization (6 points)
+
+### 1. Critique this graphic: give only three examples of what is wrong with this graphic. Be concise.
+- the circles are not proportionate in size: 79 looks about 10 times bigger than 16
+- each pair of circles does not add up to 100%; it is unclear what the remaining percentage means.
+- the information could have been represented more clearly and concisely using stacked bar plot with stack colors representing genders and each bar representing an age group.
+
+### 2. Reproduce this graphic using the diamonds data set.
+```{r}
+ggplot(data = diamonds) + geom_boxplot(mapping = aes(x = cut, y = carat, fill = color), position="identity") + labs(x="CUT OF DIAMOND", y="CARAT OF DIAMOND") + coord_flip()
+```
+
+### 3. The previous graphic is not very useful. We can make it much more useful by changing one thing about it. Make the change and plot it again.
+```{r}
+ggplot(data = diamonds) + geom_boxplot(mapping = aes(x = cut, y = carat, fill = color), position="dodge") + labs(x="CUT OF DIAMOND", y="CARAT OF DIAMOND") + coord_flip()
+```
+
+
+## <a name="munge"></a>Data munging and wrangling (6 points)
+
+### 1. Is this data “tidy”? If yes, leave it alone and go to the next problem. If no, make it tidy. 
+The data in the current form is not tidy: values for cases and population are in separate rows.
+```{r}
+mod_table <- spread(table2, key = type, value = count)
+mod_table
+```
+
+### 2. Create a new column in the diamonds data set called price_per_carat that shows the price of each diamond per carat (hint: divide). Only show me the code, not the output.
+```{r}
+mutate(diamonds, price_per_carat=price/carat)
+```
+
+### 3. For each cut of diamond in the diamonds data set, how many diamonds, and what proportion, have a price > 10000 and a carat < 1.5? There are several ways to get to an answer, but your solution must use the data wrangling verbs from the tidyverse in order to get credit.
+```{r}
+diamonds %>% group_by(cut) %>% summarize(count_total=n(), count_expensive=sum(price > 10000 & carat < 1.5), proportion_expensive=mean(price > 10000 & carat < 1.5))
+```
+
+#### Do the results make sense? Why?
+
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% arrange(price_per_carat)
+diamonds %>% mutate(price_per_carat=price/carat) %>% arrange(desc(price_per_carat))
+```
+
+Eyeballing two groupings, we can see that the most expensive per carat diamonds, compared to the least expensive, seem to have the best color and clarity, although not necessarily the best cut. 
+We can graph frequencies of price per carat grouped by cut, which shows that the best cut diamonds actually are not the most expensive per carat:
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% ggplot(mapping=aes(x=price_per_carat, y = ..density..)) + geom_freqpoly(mapping = aes(color = cut), binwidth = 500)
+```
+
+We can group diamonds by color, clarity, and cut and compare average price per carat:
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% group_by(color, clarity, cut) %>% summarize(count=n(), average_price_per_carat=mean(price_per_carat)) %>% arrange(desc(average_price_per_carat))
+```
+
+Graphing a heatmap shows somewhat of a trend towards higher price per carat with better clarity and cut, but it is not a very strong trend.
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% group_by(clarity, cut) %>% summarize(count=n(), average_price_per_carat=mean(price_per_carat)) %>% arrange(desc(average_price_per_carat)) %>% ggplot(mapping = aes(x = clarity, y = cut)) + geom_tile(mapping = aes(fill = average_price_per_carat))
+```
+Graphing the same heat map but for clarity and color (which, according to our eyeball estimate, seem to be the strongest predictors of price per carat) reveals only that the best color and clarity diamonds (represended by right- and bottom-most tile) are more expensive per carat than all others, and that the least clear diamonds cost less per carat regardless of the color. Other trends are not very clear. Overall, there are (at least) three different variables determining the price of a diamond per carat, and the trends determining the price are not very clear.
+
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% group_by(clarity, color) %>% summarize(count=n(), average_price_per_carat=mean(price_per_carat)) %>% arrange(desc(average_price_per_carat)) %>% ggplot(mapping = aes(x = clarity, y = color)) + geom_tile(mapping = aes(fill = average_price_per_carat))
+```
+
+#### Do we need to be wary of any of these numbers? Why?
+
+Graphing a distribution of prices per carat grouped by cut, we see that Ideal cut diamonds do not have the highest price per carat. 
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% ggplot(mapping=aes(x=price_per_carat, fill=cut)) + geom_histogram(binwidth=500)
+```
+
+Zooming in on the y-axis, we see that the graph has a long right tail with many values at the high end of price per carat with medium-grade cut:
+```{r}
+diamonds %>% mutate(price_per_carat=price/carat) %>% ggplot(mapping=aes(x=price_per_carat, fill=cut)) + geom_histogram(binwidth=500) + coord_cartesian(ylim = c(0, 100))
+```
+
+This may cause is to be wary of some of the observations with high price per carat.
+
+
+## <a name="eda"></a>EDA (6 points)
+Take a look at the txhousing data set that is included with the ggplot2 package and answer these questions:
+### 1. During what time period is this data from?
+The data is from years 2000-2015
+
+### 2. How many cities are represented?
+8,602
+
+### 3. Which city, month and year had the highest number of sales?
+```{r}
+txhousing %>% group_by(city, month, year) %>% summarize(total_sales=sum(sales)) %>% arrange(desc(total_sales))
+```
+
+Houston, July 2015: 8945 sales
+
+### 4. What kind of relationship do you think exists between the number of listings and the number of sales? Check your assumption and show your work.
+
+direct, more or less:
+```{r}
+txhousing %>% ggplot(mapping=aes(x=listings, y=sales)) + geom_point(na.rm = TRUE) + geom_smooth(na.rm = TRUE)
+```
+
+### 5. What proportion of sales is missing for each city?
+```{r}
+txhousing %>% mutate(missing_sale=is.na(sales)) %>% group_by(city) %>% summarize(missing_sales_proportion=mean(missing_sale))
+```
+
+### 6. Looking at only the cities and months with greater than 500 sales:
+```{r}
+tx_subset <- txhousing %>% filter(sales > 500)
+```
+
+#### Are the distributions of the median sales price (column name median), when grouped by city, different? The same? Show your work.
+Distributions by city are different:
+```{r}
+tx_subset %>% ggplot(mapping=aes(x=city, y=median)) + geom_boxplot() + coord_flip()
+```
+
+#### Any cities that stand out that you’d want to investigate further?
+
+It might be worth investigating cities with long outliers, such as Fort Bend, Dallas, or Collin Country. On the other hand, all values for Corpus Christi are within the IQR, which also may be worth investigating (this is probably because it is a smaller municipality and we filtered out months with fewer than 500 sales).
+
+#### Why might we want to filter out all cities and months with sales less than 500?
+
+Observations with sales less than 500 may have unusual values and might not provide meaningful distributions.
