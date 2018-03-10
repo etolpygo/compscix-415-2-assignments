@@ -161,11 +161,20 @@ This may cause is to be wary of some of the observations with high price per car
 
 ## <a name="eda"></a>EDA (6 points)
 Take a look at the txhousing data set that is included with the ggplot2 package and answer these questions:
+
 ### 1. During what time period is this data from?
-The data is from years 2000-2015
+```{r}
+tx_mod <- txhousing %>% mutate(padded_month=str_pad(txhousing$month, 2, pad='0')) %>% unite(yearmonth, year, padded_month, sep='-') 
+min(tx_mod$yearmonth)
+max(tx_mod$yearmonth)
+```
+
+The data is from January 2000 to July 2015.
 
 ### 2. How many cities are represented?
-8,602
+```{r}
+count(distinct(txhousing, city))
+```
 
 ### 3. Which city, month and year had the highest number of sales?
 ```{r}
@@ -183,7 +192,7 @@ txhousing %>% ggplot(mapping=aes(x=listings, y=sales)) + geom_point(na.rm = TRUE
 
 ### 5. What proportion of sales is missing for each city?
 ```{r}
-txhousing %>% mutate(missing_sale=is.na(sales)) %>% group_by(city) %>% summarize(missing_sales_proportion=mean(missing_sale))
+txhousing %>% mutate(missing_sale=is.na(sales)) %>% group_by(city) %>% summarize(missing_sales_proportion=mean(missing_sale)) %>% print(n = Inf)
 ```
 
 ### 6. Looking at only the cities and months with greater than 500 sales:

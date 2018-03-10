@@ -371,10 +371,23 @@ mod_table</code></pre>
 </div>
 <div id="eda-6-points" class="section level2">
 <h2><a name="eda"></a>EDA (6 points)</h2>
-<p>Take a look at the txhousing data set that is included with the ggplot2 package and answer these questions: ### 1. During what time period is this data from? The data is from years 2000-2015</p>
+<p>Take a look at the txhousing data set that is included with the ggplot2 package and answer these questions:</p>
+<div id="during-what-time-period-is-this-data-from" class="section level3">
+<h3>1. During what time period is this data from?</h3>
+<pre class="r"><code>tx_mod &lt;- txhousing %&gt;% mutate(padded_month=str_pad(txhousing$month, 2, pad='0')) %&gt;% unite(yearmonth, year, padded_month, sep='-') 
+min(tx_mod$yearmonth)</code></pre>
+<pre><code>## [1] &quot;2000-01&quot;</code></pre>
+<pre class="r"><code>max(tx_mod$yearmonth)</code></pre>
+<pre><code>## [1] &quot;2015-07&quot;</code></pre>
+<p>The data is from January 2000 to July 2015.</p>
+</div>
 <div id="how-many-cities-are-represented" class="section level3">
 <h3>2. How many cities are represented?</h3>
-<p>8,602</p>
+<pre class="r"><code>count(distinct(txhousing, city))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##       n
+##   &lt;int&gt;
+## 1    46</code></pre>
 </div>
 <div id="which-city-month-and-year-had-the-highest-number-of-sales" class="section level3">
 <h3>3. Which city, month and year had the highest number of sales?</h3>
@@ -405,21 +418,56 @@ mod_table</code></pre>
 </div>
 <div id="what-proportion-of-sales-is-missing-for-each-city" class="section level3">
 <h3>5. What proportion of sales is missing for each city?</h3>
-<pre class="r"><code>txhousing %&gt;% mutate(missing_sale=is.na(sales)) %&gt;% group_by(city) %&gt;% summarize(missing_sales_proportion=mean(missing_sale))</code></pre>
+<pre class="r"><code>txhousing %&gt;% mutate(missing_sale=is.na(sales)) %&gt;% group_by(city) %&gt;% summarize(missing_sales_proportion=mean(missing_sale)) %&gt;% print(n = Inf)</code></pre>
 <pre><code>## # A tibble: 46 x 2
 ##    city                  missing_sales_proportion
 ##    &lt;chr&gt;                                    &lt;dbl&gt;
-##  1 Abilene                                 0     
-##  2 Amarillo                                0     
-##  3 Arlington                               0     
-##  4 Austin                                  0     
-##  5 Bay Area                                0     
-##  6 Beaumont                                0     
-##  7 Brazoria County                         0.0749
-##  8 Brownsville                             0.0107
-##  9 Bryan-College Station                   0     
-## 10 Collin County                           0     
-## # ... with 36 more rows</code></pre>
+##  1 Abilene                                0      
+##  2 Amarillo                               0      
+##  3 Arlington                              0      
+##  4 Austin                                 0      
+##  5 Bay Area                               0      
+##  6 Beaumont                               0      
+##  7 Brazoria County                        0.0749 
+##  8 Brownsville                            0.0107 
+##  9 Bryan-College Station                  0      
+## 10 Collin County                          0      
+## 11 Corpus Christi                         0.00535
+## 12 Dallas                                 0      
+## 13 Denton County                          0      
+## 14 El Paso                                0      
+## 15 Fort Bend                              0      
+## 16 Fort Worth                             0      
+## 17 Galveston                              0.00535
+## 18 Garland                                0      
+## 19 Harlingen                              0.134  
+## 20 Houston                                0      
+## 21 Irving                                 0      
+## 22 Kerrville                              0.556  
+## 23 Killeen-Fort Hood                      0.00535
+## 24 Laredo                                 0.193  
+## 25 Longview-Marshall                      0.0642 
+## 26 Lubbock                                0.00535
+## 27 Lufkin                                 0      
+## 28 McAllen                                0.0107 
+## 29 Midland                                0.401  
+## 30 Montgomery County                      0      
+## 31 Nacogdoches                            0.0588 
+## 32 NE Tarrant County                      0      
+## 33 Odessa                                 0.385  
+## 34 Paris                                  0      
+## 35 Port Arthur                            0.0107 
+## 36 San Angelo                             0      
+## 37 San Antonio                            0      
+## 38 San Marcos                             0.246  
+## 39 Sherman-Denison                        0      
+## 40 South Padre Island                     0.620  
+## 41 Temple-Belton                          0.0588 
+## 42 Texarkana                              0.0909 
+## 43 Tyler                                  0      
+## 44 Victoria                               0      
+## 45 Waco                                   0.102  
+## 46 Wichita Falls                          0</code></pre>
 </div>
 <div id="looking-at-only-the-cities-and-months-with-greater-than-500-sales" class="section level3">
 <h3>6. Looking at only the cities and months with greater than 500 sales:</h3>
