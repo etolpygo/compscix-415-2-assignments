@@ -1,0 +1,161 @@
+---
+title: "COMPSCIX 415.2 Homework 6"
+author: "Elena Tolpygo Cranley"
+date: "3/13/2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_packages, warning=FALSE, message=FALSE}
+library(mosaicData)
+library(tidyverse)
+```
+
+# Exercise 1
+Load the Whickham dataset (data(Whickham)). Look at the help file on this dataset to learn a bit about it.
+
+### 1. What variables are in this data set?
+
+- __outcome__: survival status after 20 years: a factor with levels Alive Dead
+- __smoker__: smoking status at baseline: a factor with levels No Yes
+- __age__: age (in years) at the time of the first survey
+
+### 2. How many observations are there and what does each represent?
+
+```{r}
+nrow(Whickham)
+```
+1314 observations, each representing a woman participating in the one-in-six survey of age, smoking, and mortality in Whickham.
+
+### 3. Create a table (use the R code below as a guide) and a visualization of the relationship between smoking status and outcome, ignoring age. What do you see? Does it make sense?
+
+```{r}
+Whickham %>% count( smoker , outcome )
+
+Whickham %>% count(smoker, outcome) %>% group_by(smoker) %>% mutate(prop = n / sum(n)) %>% ggplot(aes(x=smoker, y=prop, fill=outcome)) + geom_col()
+```
+
+This does not seem to make sense, because a higher proportion of smokers (443/582 = ~76%) is alive than that of non-smokers (502/732 = ~69%).
+
+### 4. Recode the age variable into an ordered factor with three categories: age <= 44, age > 44 & age <= 64, and age > 64. Now, recreate visualization from above, but facet on your new age factor. What do you see? Does it make sense?
+
+```{r}
+whickham_agegroups <- Whickham %>% mutate(age_group=case_when(age <= 44 ~ '44 and under', age > 44 & age <= 64 ~ '45 to 64', age > 64 ~ 'over 64'))
+
+whickham_agegroups %>% count( smoker , outcome , age_group)
+
+whickham_agegroups %>% count( smoker , outcome , age_group) %>% group_by(smoker, age_group) %>% mutate(prop = n / sum(n)) %>% ggplot(aes(x=smoker, y=prop, fill=outcome)) + geom_col() + facet_grid(. ~ age_group)
+```
+
+This makes more sense now, because in each age group, a higher percentage of smokers have died than non-smokers. The reason the totals are misleading is because there are a lot more people in the 44 and under age group. Simpson's paradox at work.
+
+
+# Exercise 2
+The Central Limit Theorem states that the sampling distribution of sample means is approximately Normal, regardless of the distribution of your population. For this exercise our population distribution will be a Gamma(1,2) distribution, and we’ll show that the sampling distribution of the mean is in fact normally distributed.
+
+### 1. Generate a random sample of size n = 10000 from a gamma(1,2) distribution and plot a histogram or density curve. Use the code below to help you get your sample.
+
+```{r}
+library(tidyverse)
+n <- 10000
+# look at ?rgamma to read about this function
+gamma_samp <- tibble(x = rgamma(n, shape = 1, scale = 2))
+```
+
+```{r}
+gamma_samp %>% ggplot(aes(x)) + geom_density()
+```
+
+
+### 2. What is the mean and standard deviation of your sample? They should both be close to 2 because for a gamma distribution:
+- mean = shape x scale
+- variance = shape x scaleˆ2
+- mean_samp <- gamma_samp %>% .[['x']] %>% mean()
+
+```{r}
+mean(gamma_samp$x)
+sd(gamma_samp$x)
+```
+
+
+### 3. Pretend the distribution of our population of data looks like the plot above. Now take a sample of size n = 30 from a Gamma(1,2) distribution, plot the histogram or density curve, and calculate the mean and standard deviation.
+
+```{r}
+#gamma_samp_30 <- gamma_samp %>% sample_n(30)
+#gamma_samp_30 %>% ggplot(aes(x)) + geom_density()
+
+gamma_samp_30 <- rgamma(30, shape = 1, scale = 2)
+gamma_samp_30 <- tibble(gamma_samp_30)
+gamma_samp_30 %>% ggplot(aes(gamma_samp_30)) + geom_density()
+```
+
+```{r}
+mean(gamma_samp_30$gamma_samp_30)
+sd(gamma_samp_30$gamma_samp_30)
+```
+
+
+### 4. Take a sample of size n = 30, again from the Gamma(1,2) distribution, calculate the mean, and assign it to a vector named mean_samp. Repeat this 10000 times!!!! The code below might help.
+
+```{r}
+# create a vector with 10000 NAs
+mean_samp <- rep(NA, 10000)
+# start a loop
+for(i in 1:10000) {
+  g_samp <- rgamma(30, shape = 1, scale = 2)
+  mean_samp[i] <- mean(g_samp)
+}
+# Convert vector to a tibble
+mean_samp <- tibble(mean_samp)
+```
+
+
+### 5. Make a histogram of your collection of means from above (mean_samp).
+
+```{r}
+mean_samp %>% ggplot(aes(x=mean_samp)) + geom_histogram(bins=50)
+```
+
+
+### 6. Calculate the mean and standard deviation of all of your sample means.
+
+```{r}
+mean(mean_samp$mean_samp)
+sd(mean_samp$mean_samp)
+```
+
+
+### 7. Did anything surprise you about your answers to #6?
+
+Just as the theorem states, the sampling distribution of sample means is approximately Normal, regardless of the distribution of the population. The gamma(1,2) distribution itself is not Normal.
+
+
+### 8. According to the Central Limit Theorem, the mean of your sampling distribution should be very close to 2, and the standard deviation of your sampling distribution should be close to σ/√n = 2/√30 = 0.365. Repeat #4-#6, but now with a sample of size n = 300 instead. Do your results match up well with the theorem?
+
+```{r}
+# create a vector with 10000 NAs
+mean_samp <- rep(NA, 10000)
+# start a loop
+for(i in 1:10000) {
+  g_samp <- rgamma(300, shape = 1, scale = 2)
+  mean_samp[i] <- mean(g_samp)
+}
+# Convert vector to a tibble
+mean_samp <- tibble(mean_samp)
+
+# draw histogram
+mean_samp %>% ggplot(aes(x=mean_samp)) + geom_histogram(bins=50)
+
+# calculate mean and standard deviation
+mean(mean_samp$mean_samp)
+sd(mean_samp$mean_samp)
+
+```
+
+The results match well with the theorem: with larger sample sizes, the mean of their means is approaching 2, and the standard deviation is close to the predicted 2/√300 = 0.1155
