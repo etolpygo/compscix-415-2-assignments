@@ -1,0 +1,175 @@
+---
+title: "COMPSCIX 415.2 Homework 7"
+author: "Elena Tolpygo Cranley"
+date: "3/22/2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_packages, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(broom)
+```
+
+## Exercise 1
+Load the ass7_train.csv dataset into R. How many observations and columns are there?
+
+```{r}
+train <- read.csv("~/Documents/Box\ Sync/^edu/compscix-415-2-assignments/ass7_train.csv")
+glimpse(as_tibble(train))
+```
+Observations: 1,460
+Variables: 81
+
+## Exercise 2
+Normally at this point you would spend a few days on EDA, but for this homework we will get right to fitting some linear regression models.
+Our first step is to randomly split the data into train and test datasets. We will use a 70/30 split. There is an R package that will do the split for you, but let’s get some more practice with R and do it ourselves by
+filling in the blanks in the code below.
+
+```{r}
+# When taking a random sample, it is often useful to set a seed so that
+# your work is reproducible. Setting a seed will guarantee that the same
+# random sample will be generated every time, so long as you always set the
+# same seed beforehand
+set.seed(29283)
+
+# This data already has an Id column which we can make use of.
+# Let's create our training set using sample_frac. Fill in the blank.
+train_set <- train %>% sample_frac(0.7)
+
+# let's create our testing set using the Id column. Fill in the blanks.
+test_set <- train %>% filter(!(Id %in% train_set$Id))
+```
+
+
+## Exercise 3
+Our target is called SalePrice. First, we can fit a simple regression model consisting of only the intercept (the average of SalePrice). Fit the model and then use the broom package to
+### take a look at the coefficient,
+### compare the coefficient to the average value of SalePrice, and
+### take a look at the R-squared.
+Use the code below and fill in the blanks.
+
+```{r}
+# Fit a model with intercept only
+mod_0 <- lm(SalePrice ~ 1, data = train_set)
+
+# Double-check that the average SalePrice is equal to our model's coefficient
+mean(train_set$SalePrice)
+tidy(mod_0)
+
+# Check the R-squared
+glance(mod_0)
+```
+
+SalePrice is related to SalePrice in exactly linear 1:1 ratio (unsurprisingly).
+
+## Exercise 4
+Now fit a linear regression model using GrLivArea, OverallQual, and Neighborhood as the features. Don’t forget to look at data_description.txt to understand what these variables mean. Ask yourself these questions before fitting the model:
+### What kind of relationship will these features have with our target?
+### Can the relationship be estimated linearly?
+### Are these good features, given the problem we are trying to solve?
+
+GrLivArea(Above grade (ground) living area square feet) is numeric/quantitative, and there is a positive relationship between GrLivArea and SalePrice. The relationship can be estimated as more or less linear. 
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=GrLivArea, y=SalePrice)) + geom_point() + geom_smooth()
+```
+
+OverallQual (the overall material and finish of the house) is essentially categorical, and there is a positive relationship between  OverallQual and SalePrice. A straight line may not be a perfect approximation of this relationship but it would do a decent job.
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=OverallQual, y=SalePrice, group=OverallQual)) + geom_boxplot()
+```
+
+Neighborhood is categorical, and there is a significant difference between cheapest and most expensive neighborhood prices. The regression might work better if we recode the neighborhood as a numeric variable by desirability.
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=reorder(Neighborhood, SalePrice, FUN = median), y=SalePrice, group=Neighborhood)) + geom_boxplot() + coord_flip()
+```
+
+```{r}
+mod_1 <- lm(SalePrice ~ GrLivArea+OverallQual+Neighborhood, data = train_set)
+tidy(mod_1)
+glance(mod_1)
+```
+
+
+After fitting the model, output the coefficients and the R-squared using the broom package.
+Answer these questions:
+### How would you interpret the coefficients on GrLivArea and OverallQual?
+Both GrLivArea and OverallQual coefficients demonstrate a positive relationship between the variable and SalePrice. For every square foot of living area, the average price goes up by approximately 49.69. For every unit of increasing overall quality (ranging from 1 to 10), the price goes up by 20,543.
+
+### How would you interpret the coefficient on NeighborhoodBrkSide?
+It is negative, so Brookside is not a desirable place to live (observation supported by the boxplot graph of price by neighborhood)
+
+### Are the features significant?
+The p-value of GrLivArea and OverallQual and most of the Neighborhood features is less than 0.05, so they are statistically significant.
+
+### Are the features practically significant?
+GrLivArea and OverallQual are both practically significant. We might derive better significance from the Neighborhood feature if it was coded numerically by neighborhood desirability.
+
+### Is the model a good fit (to the training set)?
+Adjusted R-squared is 0.7616, so the model is a pretty good fit.
+
+
+## Exercise 5
+Evaluate the model on test_set using the root mean squared error (RMSE). Use the predict function to
+get the model predictions for the testing set. Recall that RMSE is the square root of the mean of the squared errors.
+
+Hint: use the sqrt() and mean() functions:
+```{r}
+price_predictions <- predict(mod_1, newdata = test_set)
+(rmse <- sqrt(mean((test_set$SalePrice - price_predictions)^2)))
+```
+```{r}
+test_set %>% mutate(predictedPrice=predict(mod_1, newdata = test_set)) %>% ggplot(aes(x=predictedPrice, y=SalePrice)) + geom_point() + geom_smooth() + coord_fixed()
+```
+The model shows a number of outliers, and the fitted curve is not quite linear. It did a passable, but not a great job.
+
+
+## Exercise 7
+One downside of the linear model is that it is sensitive to unusual values because the distance incorporates a squared term. Fit a linear model to the simulated data below, and visualise the results. Rerun a few times to generate different simulated datasets. What do you notice about the model?
+```{r}
+sim1a <- tibble(
+x = rep(1:10, each = 3),
+y = x * 1.5 + 6 + rt(length(x), df = 2))
+
+mod_2 <- lm(y ~ x, data = sim1a)
+tidy(mod_2)
+glance(mod_2)
+
+(intercept <- tidy(mod_2)%>%filter(term=='(Intercept)') %>% .[['estimate']])
+(slope <- tidy(mod_2)%>%filter(term=='x') %>% .[['estimate']])
+sim1a %>% mutate(predicted_y=slope * x + intercept) %>% ggplot(aes(x=x)) + geom_point(aes(y=y)) + geom_line(aes(y=predicted_y), color='red')
+```
+```{r}
+# create vectors with 10000 NAs
+slopes <- rep(NA, 1000)
+intercepts <- rep(NA, 1000)
+# start a loop
+for(i in 1:1000) {
+  sim1a <- tibble(
+    x = rep(1:10, each = 3),
+    y = x * 1.5 + 6 + rt(length(x), df = 2))
+  
+  mod_2 <- lm(y ~ x, data = sim1a)
+  
+  slope <- tidy(mod_2)%>%filter(term=='x') %>% .[['estimate']]
+  intercept <- tidy(mod_2)%>%filter(term=='(Intercept)') %>% .[['estimate']]
+  
+  slopes[i] <- slope
+  intercepts[i] <- intercept
+}
+# Convert vectors to tibbles
+slopes <- tibble(slopes)
+intercepts <- tibble(intercepts)
+
+# draw histograms
+slopes %>% ggplot(aes(x=slopes)) + geom_histogram(bins=50)
+intercepts %>% ggplot(aes(x=intercepts)) + geom_histogram(bins=50)
+```
+Because the simulated sample size was small (30 observations), the slopes and the intercepts of the fitted models vary significantly. If we had chosen a larger number of observations to model, the slopes and the intercepts would fit closer to the "true" slope and intercept.
+
