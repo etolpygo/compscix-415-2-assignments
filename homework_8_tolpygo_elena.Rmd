@@ -1,0 +1,136 @@
+---
+title: "COMPSCIX 415.2 Homework 8"
+author: "Elena Tolpygo Cranley"
+date: "3/26/2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_packages, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(forcats)
+library(rpart)
+library(partykit)
+library(ROCR)
+library(broom)
+```
+
+## Exercise 1
+Load the train.csv dataset into R. How many observations and columns are there? Convert the target variable to a factor because it will be loaded into R as an integer by default.
+
+```{r}
+train <- read.csv("~/Documents/Box\ Sync/^edu/compscix-415-2-assignments/train.csv") 
+train <- train %>% mutate(Survived=as_factor(case_when(Survived == 0 ~ 'no', Survived == 1 ~ 'yes'))) 
+glimpse(as_tibble(train))
+```
+  
+Observations: 891
+Variables: 12
+
+## Exercise 2
+Our first step is to randomly split the data into train and test datasets. We will use a 70/30 split, and use the random seed of 29283 so that we all should get the same training and test set.
+
+```{r}
+set.seed(29283)
+train_set <- train %>% sample_frac(0.7)
+test_set <- train %>% filter(!(PassengerId %in% train_set$PassengerId))
+```
+
+## Exercise 3
+Our target is called Survived. First, fit a logistic regression model using Pclass, Sex, Fare as your three features. Fit the model using the glm() function. Ask yourself these questions before fitting the model:
+
+### What kind of relationship will these features have with the probability of survival?
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=Survived, fill=factor(Pclass), group=factor(Pclass))) + geom_bar()
+```
+
+Passengers in the 1st class were much more likely to survive than passengers in the 3rd class.
+
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=Survived, fill=Sex, group=Sex)) + geom_bar()
+```
+
+Women were much more likely to survive than men.
+
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=Survived, y=Fare)) + geom_boxplot()
+```
+
+Passengers who survived tended to have paid a higher ticket price.
+
+
+### Are these good features, given the problem we are trying to solve?
+
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=Pclass, y=Fare, group=Pclass)) + geom_boxplot()
+```
+
+All three features appear to have predictive power on the Survival outcome; however, as ticket price is also strongly associated with passenger class, using both features might be redundant.
+
+```{r}
+as_tibble(train_set) %>% ggplot(aes(x=Pclass, y=Fare, group=interaction(Survived, Pclass), fill=Survived), position="dodge") + geom_boxplot()
+```
+
+It appears that only for passengers in the first class was there a higher association between higher ticket price and survival likelihood; otherwise, passenger class alone is a better predictor.
+
+```{r}
+as_tibble(train_set) %>% filter(Pclass>1) %>% ggplot(aes(x=factor(Pclass), y=Fare, group=interaction(Survived, Pclass), fill=Survived), position="dodge") + geom_boxplot()
+```
+
+
+
+```{r}
+# Fit a model with intercept only
+mod_1 <- glm(Survived ~ Pclass+Sex+Fare, data = train_set, family = 'binomial')
+# take a look at the features and coefficients
+tidy(mod_1)
+```
+
+
+After fitting the model, output the coefficients using the broom package and answer these questions:
+
+### How would you interpret the coefficients?
+
+The coefficients agree with the previous observations:
+
+- having a class with a higher numeric value (that is, a lower class) is negatively associated with survival;
+- being male is strongly negatively associated with survival;
+- for each dollar more paid in ticket fare, likelihood of survival increased by about 1.8% - although this is a very weak association since the p-value is quite high. If we model using ticket fare without passenger class, the p-value is much better.
+
+### Are the features significant?
+
+Gender is very significant; passenger class and ticket price are significant separately (and class is more significant than ticket price), but when both are used to fit the model, ticket price is not significant.
+
+
+## Exercise 4
+Now, let’s fit a model using a classification tree, using the same features and plot the final decision tree. Use the code below for help.
+
+```{r}
+tree_mod <- rpart(Survived ~ Pclass+Sex+Fare, data = train_set)
+plot(as.party(tree_mod))
+```
+
+
+Answer these questions:
+
+### Describe in words one path a Titanic passenger might take down the tree. (Hint: look at your tree, choose a path from the top to a terminal node, and describe the path like this - *a male passenger who paid a fare > 30 and was in first class has a high probability of survival*)
+
+A female in second class or better had a very high likelihood of survival.
+
+
+### Does anything surprise you about the fitted tree?
+
+If a female was in third class and paid:
+
+- more than 23.7 - very unlikely to survive;
+- between 23.7 and 15 - fairly likely to survive;
+- between 15 and 7.888 - more likely to not survive;
+- less than 7.88 - fairly likely to survive.
+
+In other words, for women in third class, having paid a higher ticket price did not lead to higher likelihood of survival. Women who paid less than 7.88 or 23.7 and 15 were likely to survive, but those who paid between 15 and 7.888 or more than 23.7 were not likely to survive. This is probably(?) an artifact of the training data selection and relatively small numbers in each outcome bin.
